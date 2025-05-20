@@ -11,8 +11,8 @@ interface PieceOption {
   id: SelectablePiece;
   name: string;
   Icon: LucideIcon;
-  originalIconColor: string; // Renamed for clarity
-  originalIconStroke?: string; // Renamed for clarity
+  originalIconColor: string; 
+  originalIconStroke?: string;
 }
 
 const pieceOptions: PieceOption[] = [
@@ -57,29 +57,25 @@ export function PieceSelector({ selectedPiece, onSelectPiece, className }: Piece
             let iconStroke: string;
 
             if (isWhitePiece) {
-              iconFill = option.originalIconColor; // White fill
-              iconStroke = isSelected ? 'hsl(var(--piece-outline-light))' : 'hsl(var(--piece-outline-dark))';
+              iconFill = option.originalIconColor; 
+              iconStroke = option.originalIconStroke!;
             } else if (isBlackPiece) {
-              iconFill = option.originalIconColor; // Black fill
-              iconStroke = option.originalIconStroke!; // Black pieces always have light outline
+              iconFill = option.originalIconColor; 
+              iconStroke = option.originalIconStroke!; 
             } else { // Eraser
               iconFill = 'transparent';
-              iconStroke = option.originalIconColor; // Eraser stroke color
+              iconStroke = option.originalIconColor; 
             }
             
-            // Pawns (Circle icon) are filled, other pieces are also filled with their main color.
-            // The logic above sets `iconFill` to the main piece color (white/black).
-
             return (
               <Button
                 key={option.id}
                 variant={isSelected ? 'default' : 'outline'}
-                size="lg" // Uses h-11, px-8 from variants by default
+                size="lg" 
                 onClick={() => onSelectPiece(isSelected ? null : option.id)}
                 className={cn(
-                  "flex flex-col items-center justify-center h-20 p-2 transition-all", // Overrides h-11, px-8 with h-20, p-2
+                  "flex flex-col items-center justify-center h-20 p-2 transition-all", 
                   isSelected && "ring-2 ring-[hsl(var(--ring))] shadow-md",
-                  // Specific styling for unselected white pieces for brown background
                   isWhitePiece && !isSelected && 
                     "bg-secondary text-secondary-foreground border-secondary hover:bg-secondary/80 hover:text-secondary-foreground"
                 )}
@@ -89,7 +85,7 @@ export function PieceSelector({ selectedPiece, onSelectPiece, className }: Piece
                 <option.Icon
                   className="w-8 h-8 mb-1"
                   stroke={iconStroke}
-                  strokeWidth={option.id !== 'empty' && option.id !== 'P' && option.id !== 'p' ? 1.5 : 2}
+                  strokeWidth={option.id === 'empty' ? 2 : 1.5} // All pieces 1.5, eraser 2
                   fill={iconFill}
                 />
                 <span className="text-xs truncate">{option.name.split(' ')[1] || option.name}</span>
