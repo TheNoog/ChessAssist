@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Chessboard, type HighlightedSquareInfo } from './Chessboard';
 import { PieceSelector, type SelectablePiece } from './PieceSelector';
@@ -6,29 +7,36 @@ import { fenToBoard, boardToFen, INITIAL_FEN_EMPTY, INITIAL_FEN_STANDARD, algebr
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trash2, RotateCcw } from 'lucide-react';
-import type { AnalyseBoardPositionOutput } from '@/ai/flows/analyse-board-position'; // Assuming this type exists
+import type { AnalyseBoardPositionOutput } from '@/ai/flows/analyse-board-position'; 
 import { cn } from '@/lib/utils';
 
 interface BoardEditorProps {
   initialFen?: string;
   onFenChange: (fen: string) => void;
   analysisOutput: AnalyseBoardPositionOutput | null;
+  activeColor: 'w' | 'b';
   className?: string;
 }
 
-export function BoardEditor({ initialFen = INITIAL_FEN_STANDARD, onFenChange, analysisOutput, className }: BoardEditorProps) {
+export function BoardEditor({ 
+  initialFen = INITIAL_FEN_STANDARD, 
+  onFenChange, 
+  analysisOutput, 
+  activeColor,
+  className 
+}: BoardEditorProps) {
   const [board, setBoard] = useState<BoardState>(() => fenToBoard(initialFen));
   const [selectedPiece, setSelectedPiece] = useState<SelectablePiece | null>(null);
 
   useEffect(() => {
-    // Update board if initialFen prop changes externally (e.g. parent resets)
     setBoard(fenToBoard(initialFen));
   }, [initialFen]);
   
   const updateBoardAndFen = useCallback((newBoard: BoardState) => {
     setBoard(newBoard);
-    onFenChange(boardToFen(newBoard));
-  }, [onFenChange]);
+    // Use the activeColor prop to construct the FEN
+    onFenChange(boardToFen(newBoard, activeColor));
+  }, [onFenChange, activeColor]);
 
   const handleSquareClick = (row: number, col: number) => {
     if (selectedPiece) {
@@ -39,7 +47,7 @@ export function BoardEditor({ initialFen = INITIAL_FEN_STANDARD, onFenChange, an
   };
 
   const handlePieceDrop = (fromRow: number, fromCol: number, toRow: number, toCol: number) => {
-    if (fromRow === toRow && fromCol === toCol) return; // No change
+    if (fromRow === toRow && fromCol === toCol) return; 
     const newBoard = board.map(r => [...r]);
     const pieceToMove = newBoard[fromRow][fromCol];
     newBoard[toRow][toCol] = pieceToMove;
@@ -48,13 +56,15 @@ export function BoardEditor({ initialFen = INITIAL_FEN_STANDARD, onFenChange, an
   };
 
   const clearBoard = () => {
-    updateBoardAndFen(fenToBoard(INITIAL_FEN_EMPTY));
-    onFenChange(INITIAL_FEN_EMPTY); // Ensure parent is notified immediately
+    const emptyBoardState = fenToBoard(INITIAL_FEN_EMPTY.split(' ')[0]); // Get only piece placement for empty
+    // Generate FEN for empty board using the current activeColor
+    onFenChange(boardToFen(emptyBoardState, activeColor, '-')); 
   };
 
   const resetBoard = () => {
-    updateBoardAndFen(fenToBoard(INITIAL_FEN_STANDARD));
-    onFenChange(INITIAL_FEN_STANDARD); // Ensure parent is notified immediately
+    // Resetting board always implies white to move for standard setup
+    const standardBoardState = fenToBoard(INITIAL_FEN_STANDARD.split(' ')[0]); // Get only piece placement
+    onFenChange(boardToFen(standardBoardState, 'w')); // 'w' for white to move
   };
   
   const [highlightedSquares, setHighlightedSquares] = useState<HighlightedSquareInfo[]>([]);
@@ -64,10 +74,7 @@ export function BoardEditor({ initialFen = INITIAL_FEN_STANDARD, onFenChange, an
       const highlights: HighlightedSquareInfo[] = [];
       analysisOutput.forEach((moveData, index) => {
         const moveStr = moveData.move;
-        // Expected format e.g. e2e4, Nf3, O-O
-        // For simplicity, assuming basic from-to format like "e2e4"
-        // More robust parsing would be needed for full algebraic notation (Nf3, O-O, etc.)
-        if (moveStr.length === 4 || moveStr.length === 5) { // e.g. e2e4 or e7e8q
+        if (moveStr.length === 4 || moveStr.length === 5) { 
           const fromAlg = moveStr.substring(0, 2);
           const toAlg = moveStr.substring(2, 4);
           const fromCoords = algebraicToCoords(fromAlg);
@@ -111,7 +118,7 @@ export function BoardEditor({ initialFen = INITIAL_FEN_STANDARD, onFenChange, an
             onSquareClick={handleSquareClick}
             onPieceDrop={handlePieceDrop}
             highlightedSquares={highlightedSquares}
-            draggablePieces={!selectedPiece} // Only allow dragging if no piece is selected for placement
+            draggablePieces={!selectedPiece} 
           />
         </div>
       </CardContent>

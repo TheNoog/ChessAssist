@@ -1,9 +1,10 @@
+
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { BoardEditor } from '@/components/chess/BoardEditor';
 import { MoveAnalysisPanel } from '@/components/chess/MoveAnalysisPanel';
-import { INITIAL_FEN_STANDARD } from '@/lib/chess-utils';
+import { INITIAL_FEN_STANDARD, fenToBoard } from '@/lib/chess-utils';
 import { analyseBoardPosition, type AnalyseBoardPositionOutput } from '@/ai/flows/analyse-board-position';
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
@@ -20,25 +21,58 @@ import {
 
 export default function ChessAssistPage() {
   const [fen, setFen] = useState(INITIAL_FEN_STANDARD);
+  const [activeColor, setActiveColor] = useState<'w' | 'b'>('w');
   const [analysisOutput, setAnalysisOutput] = useState<AnalyseBoardPositionOutput | null>(null);
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
   const { toast } = useToast();
 
-  // Debounce FEN updates to avoid excessive re-renders or calls if needed elsewhere
-  // For now, direct update is fine as BoardEditor handles its internal state primarily.
-  const handleFenChange = (newFen: string) => {
+  const handleFenChange = useCallback((newFen: string) => {
     setFen(newFen);
-    // If FEN changes, analysis for previous FEN is invalid
+    const parts = newFen.split(' ');
+    if (parts.length > 1 && (parts[1] === 'w' || parts[1] === 'b')) {
+      setActiveColor(parts[1]);
+    }
     setAnalysisOutput(null); 
+  }, []);
+
+  const handleActiveColorChange = (color: 'w' | 'b') => {
+    setActiveColor(color);
+    // Update FEN to reflect new active color immediately
+    const parts = fen.split(' ');
+    if (parts.length > 1) {
+      parts[1] = color;
+      const newFen = parts.join(' ');
+      if (newFen !== fen) {
+         // only call setFen if it actually changes to avoid potential loop with handleFenChange
+         setFen(newFen); 
+      }
+    }
+     setAnalysisOutput(null); // New player to move invalidates old analysis
   };
+
 
   const handleAnalyse = async () => {
     setIsLoadingAnalysis(true);
     setAnalysisOutput(null); 
     try {
-      // The AI flow expects only the piece placement part of FEN
-      const piecePlacementFen = fen.split(' ')[0];
-      const result = await analyseBoardPosition(piecePlacementFen);
+      const fenParts = fen.split(' ');
+      let fenToSend = fen;
+
+      if (fenParts.length > 1) {
+        fenParts[1] = activeColor; // Ensure the activeColor from selector is used
+         // Reconstruct other parts; use defaults if not present, though FEN from board editor should be complete
+        const currentPiecePlacement = fenParts[0];
+        const currentCastling = fenParts.length > 2 ? fenParts[2] : 'KQkq';
+        const currentEnPassant = fenParts.length > 3 ? fenParts[3] : '-';
+        const currentHalfMove = fenParts.length > 4 ? fenParts[4] : '0';
+        const currentFullMove = fenParts.length > 5 ? fenParts[5] : '1';
+        fenToSend = `${currentPiecePlacement} ${activeColor} ${currentCastling} ${currentEnPassant} ${currentHalfMove} ${currentFullMove}`;
+      } else {
+        // This case should ideally not happen if FEN is always well-formed
+        fenToSend = `${fen} ${activeColor} KQkq - 0 1`;
+      }
+      
+      const result = await analyseBoardPosition(fenToSend);
       setAnalysisOutput(result);
       if (result.length === 0) {
         toast({
@@ -58,15 +92,18 @@ export default function ChessAssistPage() {
     setIsLoadingAnalysis(false);
   };
   
-  // Ensure client-side only execution for dynamic parts if needed,
-  // but useState already makes it client-side.
   const [isClient, setIsClient] = useState(false);
   useEffect(() => {
     setIsClient(true);
+    // Sync activeColor from initial FEN
+    const parts = INITIAL_FEN_STANDARD.split(' ');
+    if (parts.length > 1 && (parts[1] === 'w' || parts[1] === 'b')) {
+      setActiveColor(parts[1]);
+    }
   }, []);
 
   if (!isClient) {
-    return null; // Or a loading spinner, to avoid hydration mismatches
+    return null; 
   }
 
   return (
@@ -101,11 +138,12 @@ export default function ChessAssistPage() {
                             <div className="space-y-2 text-sm">
                               <p>1. <strong>Set up the board:</strong> Click pieces from the 'Select Piece' panel, then click on the board to place them. Use the eraser to clear squares. You can also drag pieces on the board.</p>
                               <p>2. <strong>Board controls:</strong> Use 'Clear Board' to empty all squares or 'Reset Board' for the standard starting position.</p>
-                              <p>3. <strong>Analyse:</strong> Once your position is set, click 'Analyse Position'. The AI will suggest the top 3 moves.</p>
-                              <p>4. <strong>View results:</strong> Suggested moves appear on the right, and are highlighted on the board with numbered indicators.</p>
+                              <p>3. <strong>Player to Move:</strong> Select 'White to move' or 'Black to move' in the Analysis Panel before analysing.</p>
+                              <p>4. <strong>Analyse:</strong> Once your position and player to move are set, click 'Analyse Position'. The AI will suggest the top 3 moves.</p>
+                              <p>5. <strong>View results:</strong> Suggested moves appear on the right, and are highlighted on the board with numbered indicators.</p>
                             </div>
                           ),
-                          duration: 15000, // Longer duration for help text
+                          duration: 15000, 
                         });
                      }}>
                         <HelpCircle className="h-5 w-5" />
@@ -127,6 +165,7 @@ export default function ChessAssistPage() {
                 initialFen={fen}
                 onFenChange={handleFenChange}
                 analysisOutput={analysisOutput}
+                activeColor={activeColor}
               />
             </div>
             <Separator orientation="vertical" className="hidden lg:block h-auto" />
@@ -135,6 +174,8 @@ export default function ChessAssistPage() {
                 analysisOutput={analysisOutput}
                 isLoading={isLoadingAnalysis}
                 onAnalyseRequest={handleAnalyse}
+                activeColor={activeColor}
+                onActiveColorChange={handleActiveColorChange}
               />
             </div>
           </div>

@@ -1,3 +1,4 @@
+
 export type Piece = 'P' | 'N' | 'B' | 'R' | 'Q' | 'K' | 'p' | 'n' | 'b' | 'r' | 'q' | 'k';
 export type SquareState = Piece | null;
 export type BoardState = SquareState[][];
@@ -29,32 +30,40 @@ export function fenToBoard(fen: string): BoardState {
   return board;
 }
 
-export function boardToFen(board: BoardState): string {
-  let fen = "";
+export function boardToFen(
+  board: BoardState,
+  activeColor: 'w' | 'b',
+  castling = 'KQkq',
+  enPassant = '-',
+  halfMoveClock = '0',
+  fullMoveNumber = '1'
+): string {
+  let piecePlacementFen = "";
   for (let r = 0; r < 8; r++) {
     let emptyCount = 0;
     for (let f = 0; f < 8; f++) {
       const piece = board[r][f];
       if (piece) {
         if (emptyCount > 0) {
-          fen += emptyCount;
+          piecePlacementFen += emptyCount;
           emptyCount = 0;
         }
-        fen += piece;
+        piecePlacementFen += piece;
       } else {
         emptyCount++;
       }
     }
     if (emptyCount > 0) {
-      fen += emptyCount;
+      piecePlacementFen += emptyCount;
     }
     if (r < 7) {
-      fen += '/';
+      piecePlacementFen += '/';
     }
   }
-  // For simplicity, always assume white to move and default castling/en passant.
-  // The AI flow primarily cares about piece placement.
-  return `${fen} w KQkq - 0 1`;
+  // If the board is empty, standard castling rights don't make sense.
+  const defaultCastling = piecePlacementFen === '8/8/8/8/8/8/8/8' ? '-' : castling;
+  
+  return `${piecePlacementFen} ${activeColor} ${defaultCastling} ${enPassant} ${halfMoveClock} ${fullMoveNumber}`;
 }
 
 export function algebraicToCoords(algebraic: string): { row: number, col: number } | null {
