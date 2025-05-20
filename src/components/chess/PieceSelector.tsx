@@ -1,8 +1,9 @@
 
+import { ChessPiece } from './ChessPiece';
 import type { Piece } from '@/lib/chess-utils';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Crown, LucideIcon, Castle, Church, ToyBrick, Circle, Eraser, Gem } from 'lucide-react';
+import { Eraser, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export type SelectablePiece = Piece | 'empty';
@@ -10,28 +11,27 @@ export type SelectablePiece = Piece | 'empty';
 interface PieceOption {
   id: SelectablePiece;
   name: string;
-  Icon: LucideIcon;
-  originalIconColor: string; 
-  originalIconStroke?: string;
+  pieceDef?: Piece; // Actual piece character like 'K', 'p'
+  LucideIcon?: LucideIcon; // For non-piece icons like Eraser
 }
 
 const pieceOptions: PieceOption[] = [
   // White pieces
-  { id: 'K', name: 'White King', Icon: Crown, originalIconColor: 'hsl(var(--piece-white-fill))', originalIconStroke: 'hsl(var(--piece-outline-dark))' },
-  { id: 'Q', name: 'White Queen', Icon: Gem, originalIconColor: 'hsl(var(--piece-white-fill))', originalIconStroke: 'hsl(var(--piece-outline-dark))' },
-  { id: 'R', name: 'White Rook', Icon: Castle, originalIconColor: 'hsl(var(--piece-white-fill))', originalIconStroke: 'hsl(var(--piece-outline-dark))' },
-  { id: 'B', name: 'White Bishop', Icon: Church, originalIconColor: 'hsl(var(--piece-white-fill))', originalIconStroke: 'hsl(var(--piece-outline-dark))' },
-  { id: 'N', name: 'White Knight', Icon: ToyBrick, originalIconColor: 'hsl(var(--piece-white-fill))', originalIconStroke: 'hsl(var(--piece-outline-dark))' },
-  { id: 'P', name: 'White Pawn', Icon: Circle, originalIconColor: 'hsl(var(--piece-white-fill))', originalIconStroke: 'hsl(var(--piece-outline-dark))' },
+  { id: 'K', name: 'White King', pieceDef: 'K' },
+  { id: 'Q', name: 'White Queen', pieceDef: 'Q' },
+  { id: 'R', name: 'White Rook', pieceDef: 'R' },
+  { id: 'B', name: 'White Bishop', pieceDef: 'B' },
+  { id: 'N', name: 'White Knight', pieceDef: 'N' },
+  { id: 'P', name: 'White Pawn', pieceDef: 'P' },
   // Black pieces
-  { id: 'k', name: 'Black King', Icon: Crown, originalIconColor: 'hsl(var(--piece-black-fill))', originalIconStroke: 'hsl(var(--piece-outline-light))' },
-  { id: 'q', name: 'Black Queen', Icon: Gem, originalIconColor: 'hsl(var(--piece-black-fill))', originalIconStroke: 'hsl(var(--piece-outline-light))' },
-  { id: 'r', name: 'Black Rook', Icon: Castle, originalIconColor: 'hsl(var(--piece-black-fill))', originalIconStroke: 'hsl(var(--piece-outline-light))' },
-  { id: 'b', name: 'Black Bishop', Icon: Church, originalIconColor: 'hsl(var(--piece-black-fill))', originalIconStroke: 'hsl(var(--piece-outline-light))' },
-  { id: 'n', name: 'Black Knight', Icon: ToyBrick, originalIconColor: 'hsl(var(--piece-black-fill))', originalIconStroke: 'hsl(var(--piece-outline-light))' },
-  { id: 'p', name: 'Black Pawn', Icon: Circle, originalIconColor: 'hsl(var(--piece-black-fill))', originalIconStroke: 'hsl(var(--piece-outline-light))' },
+  { id: 'k', name: 'Black King', pieceDef: 'k' },
+  { id: 'q', name: 'Black Queen', pieceDef: 'q' },
+  { id: 'r', name: 'Black Rook', pieceDef: 'r' },
+  { id: 'b', name: 'Black Bishop', pieceDef: 'b' },
+  { id: 'n', name: 'Black Knight', pieceDef: 'n' },
+  { id: 'p', name: 'Black Pawn', pieceDef: 'p' },
   // Eraser
-  { id: 'empty', name: 'Eraser', Icon: Eraser, originalIconColor: 'hsl(var(--foreground))' }, // Eraser uses originalIconColor for its stroke
+  { id: 'empty', name: 'Eraser', LucideIcon: Eraser },
 ];
 
 interface PieceSelectorProps {
@@ -50,45 +50,34 @@ export function PieceSelector({ selectedPiece, onSelectPiece, className }: Piece
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
           {pieceOptions.map((option) => {
             const isSelected = selectedPiece === option.id;
-            const isWhitePiece = ['K', 'Q', 'R', 'B', 'N', 'P'].includes(option.id);
-            const isBlackPiece = ['k', 'q', 'r', 'b', 'n', 'p'].includes(option.id);
-
-            let iconFill: string;
-            let iconStroke: string;
-
-            if (isWhitePiece) {
-              iconFill = option.originalIconColor; 
-              iconStroke = option.originalIconStroke!;
-            } else if (isBlackPiece) {
-              iconFill = option.originalIconColor; 
-              iconStroke = option.originalIconStroke!; 
-            } else { // Eraser
-              iconFill = 'transparent';
-              iconStroke = option.originalIconColor; 
-            }
+            // Determine if it's a white piece for styling the button background
+            const isWhitePieceButton = !!option.pieceDef && option.pieceDef === option.pieceDef.toUpperCase();
             
             return (
               <Button
                 key={option.id}
                 variant={isSelected ? 'default' : 'outline'}
-                size="lg" 
                 onClick={() => onSelectPiece(isSelected ? null : option.id)}
                 className={cn(
                   "flex flex-col items-center justify-center h-20 p-2 transition-all", 
                   isSelected && "ring-2 ring-[hsl(var(--ring))] shadow-md",
-                  isWhitePiece && !isSelected && 
+                  isWhitePieceButton && !isSelected && 
                     "bg-secondary text-secondary-foreground border-secondary hover:bg-secondary/80 hover:text-secondary-foreground"
                 )}
                 aria-label={option.name}
                 title={option.name}
               >
-                <option.Icon
-                  className="w-8 h-8 mb-1"
-                  stroke={iconStroke}
-                  strokeWidth={option.id === 'empty' ? 2 : 1.5} // All pieces 1.5, eraser 2
-                  fill={iconFill}
-                />
-                <span className="text-xs truncate">{option.name.split(' ')[1] || option.name}</span>
+                {option.pieceDef ? (
+                  <ChessPiece piece={option.pieceDef} size="medium" />
+                ) : option.LucideIcon ? (
+                  <option.LucideIcon
+                    className="w-8 h-8" // Standard size for Lucide icon
+                    stroke={'hsl(var(--foreground))'} // Eraser stroke color
+                    strokeWidth={2} // Eraser stroke width
+                    fill="transparent"
+                  />
+                ) : null}
+                <span className="text-xs mt-2 truncate">{option.name.split(' ')[1] || option.name}</span>
               </Button>
             );
           })}
