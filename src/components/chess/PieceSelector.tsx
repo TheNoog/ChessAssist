@@ -29,7 +29,7 @@ const pieceOptions: PieceOption[] = [
   { id: 'r', name: 'Black Rook', pieceDef: 'r' },
   { id: 'b', name: 'Black Bishop', pieceDef: 'b' },
   { id: 'n', name: 'Black Knight', pieceDef: 'n' },
-  { id: 'p', name: 'Black Pawn', pieceDef: 'p' },
+  { id: 'p', name: 'Black Pawn', pieceDef: 'P' }, // Use 'P' for white pawn glyph
   // Eraser
   { id: 'empty', name: 'Eraser', LucideIcon: Eraser },
 ];
@@ -50,9 +50,12 @@ export function PieceSelector({ selectedPiece, onSelectPiece, className }: Piece
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
           {pieceOptions.map((option) => {
             const isSelected = selectedPiece === option.id;
-            // Determine if it's a white piece for styling the button background
-            const isWhitePieceButton = !!option.pieceDef && option.pieceDef === option.pieceDef.toUpperCase();
+            // Determine if the button is for a white piece based on its ID for correct background styling
+            const isWhitePieceButton = !!option.pieceDef && option.id !== 'empty' && option.id === option.id.toUpperCase();
             
+            const isBlackPawnSelectorIcon = option.id === 'p' && option.pieceDef === 'P';
+            const pieceColorOverride = isBlackPawnSelectorIcon ? 'black' : undefined;
+
             return (
               <Button
                 key={option.id}
@@ -68,12 +71,16 @@ export function PieceSelector({ selectedPiece, onSelectPiece, className }: Piece
                 title={option.name}
               >
                 {option.pieceDef ? (
-                  <ChessPiece piece={option.pieceDef} size="medium" />
+                  <ChessPiece 
+                    piece={option.pieceDef} 
+                    size="medium" 
+                    overrideColor={pieceColorOverride} 
+                  />
                 ) : option.LucideIcon ? (
                   <option.LucideIcon
-                    className="w-8 h-8" // Standard size for Lucide icon
-                    stroke={'hsl(var(--foreground))'} // Eraser stroke color
-                    strokeWidth={2} // Eraser stroke width
+                    className="w-8 h-8" 
+                    stroke={'hsl(var(--foreground))'} 
+                    strokeWidth={1.5} // Keep eraser stroke consistent if needed, or adjust
                     fill="transparent"
                   />
                 ) : null}
