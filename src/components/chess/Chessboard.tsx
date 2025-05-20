@@ -1,3 +1,4 @@
+import React from 'react';
 import type { BoardState, SquareState } from '@/lib/chess-utils';
 import { ChessSquare } from './ChessSquare';
 
