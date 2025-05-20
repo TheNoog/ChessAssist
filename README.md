@@ -2,6 +2,11 @@
 
 ChessAssist is an interactive, web-based chess tool designed for players of all levels who want to analyze chess positions, set up custom scenarios, and get insights from an AI chess engine. Built with Next.js, React, ShadCN UI components, Tailwind CSS, and Genkit for AI, this application provides a modern and responsive interface for all your chess analysis needs.
 
+![ChessAssist](ChessAssist.png)
+
+
+<br />
+
 ## Table of Contents
 
 - [Features](#features)
